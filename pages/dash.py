@@ -1,8 +1,9 @@
 import dash 
 from dash import Dash, html, dcc, callback, Output, Input
 import dash_bootstrap_components as dbc
-from component.card import create_card
 from utils.load_data import DataProcessor
+from component.callback_ import update_image_card,updated_kpi_card
+from component.card import kpi_card
 
 
 dash.register_page(__name__, path='/',name='Main')
@@ -13,8 +14,20 @@ dash.register_page(__name__, path='/',name='Main')
 Ldata         = DataProcessor(r'data\kenya_hotels_detailed_data.xlsx')
 meta_data      = Ldata.read_data('Hotel_Metadata')
 list_of_hotels = meta_data['index'].unique().tolist()
+list_of_hotels= list_of_hotels.sort()
+
+# Read Price Rooms Sheet
+price_rooms_data = Ldata.read_data('Price_Rooms')
+
+# Detailed Amenities Data
+detailed_amenities_data = Ldata.read_data('Detailed_Amenities')
 
 
+# Create a dictionary for hotels
+
+hotel_dict                       = Ldata.read_data('Unique Code')
+hotel_dictionary_start_with_code = dict(zip(hotel_dict['Hotel Code'], hotel_dict['Hotel Name']))
+hotel_dictionary_start_with_name = dict(zip(hotel_dict['Hotel Name'], hotel_dict['Hotel Code']))
 
 
 
@@ -23,19 +36,29 @@ list_of_hotels = meta_data['index'].unique().tolist()
 layout = dbc.Container(
     
     [
-        html.H1("Welcome to the Hotel Analytics Dashboard", className="text-center my-4"),
+       
         
-        ## Dropdown Row
+        ## Dropdown Row and KPI Cards
         dbc.Row([
             dbc.Col([
                 dcc.Dropdown(
                     id='hotel-dropdown',
-                    options=[{'label':h , 'value':h} for h in meta_data['index'].unique().tolist()],
+                    options=[{'label':h , 'value':h} for h in sorted(meta_data['index'].unique().tolist())],
                     value='Eka Hotel',
                     placeholder="Select a Hotel",
                 )
                      ],width=4,),
+            
+            dbc.Col([
+                html.H3("Welcome to the Hotel Analytics Dashboard", className="text-center"),
+            ])
+    
+            
+            
+            
                ],class_name='mb-4'),
+        
+
         
         
         ## Cards Row
@@ -43,37 +66,47 @@ layout = dbc.Container(
             
             dbc.Col([
                 dbc.Card([
-                    dbc.CardImg(id='card-image', src="", top=True, style={"height": "200px", "object-fit": "cover"}),
+                    dbc.CardImg(id='card-image', src="", top=True, style={"height": "350", "object-fit": "cover"}),
                     dbc.CardBody([
-                        html.H5(id='card-title', className="card-title"),
-                        html.H2(id='card-value', className="card-text")
+                        html.H6(id='card-title', className="card-title"),
                     ]),
                     
-                dbc.Markdown([])
-                
                 
                 ], color="primary", inverse=True)
-            ], width=4),
-        ]),
+            ], width=4 ),
+            
+            dbc.Col([
+                    kpi_card('card-revenue', 'Lowest Room Price', icon="fas fa-bed")
+
+                
+                ],xs=12, sm=6, md=6, lg=3, xl=2),
+            dbc.Col([
+                kpi_card('card-rating', 'Overall Rating', icon="fas fa-star")
+                
+                
+                ],xs=12, sm=6, md=6, lg=3, xl=2),
+            dbc.Col([
+                kpi_card('card-ammenties', 'Number of Amenities', icon="fas fa-list-check")
+                
+                ],xs=12, sm=6, md=6, lg=3, xl=2),
+            dbc.Col([
+                kpi_card('card-location-rating', 'Location Rating', icon="fas fa-location-dot")
+
+                
+                ],xs=12, sm=6, md=6, lg=3, xl=2),
+            
+            
+         ]),
         
         
     ], fluid=True
-    
-    
                       )
 
-
-
-
 # --- Callback ---
-@callback(
-    Output('card-image', 'src'),
-    Output('card-title', 'children'),
-    Output('card-value', 'children'),
-    Input('hotel-dropdown', 'value')
-)
-def update_card(selected_hotel):
-    if not selected_hotel:
-        return "", "", ""
-    hotel_data = meta_data[meta_data['index'] == selected_hotel].iloc[0]
-    return hotel_data['original_image'], selected_hotel, f"⭐ {hotel_data['rating']}"
+
+# Image Card Callback
+update_image_card()
+# KPI Card Callbacks 
+updated_kpi_card()
+    
+
