@@ -1,5 +1,7 @@
 from dash import Input, Output, callback
 from utils.load_data import DataProcessor
+from dash import dash
+from utils.plot_function import plot_bar
 
 
 Ldata         = DataProcessor(r'data\kenya_hotels_detailed_data.xlsx')
@@ -65,3 +67,24 @@ def updated_kpi_card():
         
         
         return f"KES{hotel_price_data_in_kes:,.0f}" ,   f"{amenities}"  , f"{overal_rating}", f"{location_rating}"
+    
+    
+    
+def update_bar_chart():
+        
+    @callback(Output('price-trend-graph', 'figure'),Input('hotel-dropdown', 'value'))
+    def plot_price_bar(selected_hotel):
+        
+        hotel_code = hotel_dictionary_start_with_name.get(selected_hotel)
+        
+        if selected_hotel is None:
+            return dash.no_update
+        
+        price_rooms_data_filtered                   = price_rooms_data[price_rooms_data['unicode'] == hotel_code]
+        price_rooms_data_filtered['rate_lowest_']   = price_rooms_data_filtered['rate_lowest'] * 130  # Convert to KES
+        price_rooms_data_filtered_grouped           = price_rooms_data_filtered.groupby('room_name')['rate_lowest_'].min().reset_index()[:4]
+
+        fig = plot_bar(price_rooms_data_filtered_grouped, x_col='room_name', y_col='rate_lowest_', title=f'Room Prices for Top 4 {selected_hotel} (in KES)')
+        
+        return fig
+        
